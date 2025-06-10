@@ -81,6 +81,16 @@ culture_score = st.sidebar.slider(
     help="Positive values make recruitment easier, negative values make it harder. Each point ≈ $1,000 in compensation value."
 )
 
+st.sidebar.markdown("### Regional Adjustment")
+cost_of_living = st.sidebar.slider(
+    "Regional Cost of Living Index",
+    min_value=77,
+    max_value=231,
+    value=100,
+    step=1,
+    help="Cost of living index relative to national average (100). Manhattan=231, Decatur IL=77"
+)
+
 st.sidebar.markdown("### Target Parameters")
 target_probability = st.sidebar.slider(
     "Target Recruitment Probability",
@@ -94,6 +104,8 @@ target_probability = st.sidebar.slider(
 col1, col2 = st.columns([2, 1])
 
 with col1:
+    # Apply cost of living adjustment to the x-axis range
+    col_adjustment = cost_of_living / 100.0
     x = np.linspace(250, 700, 500)
     
     y_baseline = sigmoid_recruitment(x, a, b, c, k=0)
@@ -114,6 +126,10 @@ with col1:
     salary_baseline = find_salary_for_probability(target_probability, a, b, c, k=0)
     salary_current = find_salary_for_probability(target_probability, a, b, c, k=culture_score)
     
+    # Apply cost of living adjustment to salaries
+    salary_baseline_adjusted = salary_baseline * col_adjustment if salary_baseline else None
+    salary_current_adjusted = salary_current * col_adjustment if salary_current else None
+    
     if salary_current:
         ax.plot([salary_current, salary_current], [0, target_probability], 'b--', alpha=0.5)
         ax.plot([250, salary_current], [target_probability, target_probability], 'b--', alpha=0.5)
@@ -121,7 +137,10 @@ with col1:
     
     ax.set_xlabel('Compensation ($1000s)', fontsize=12)
     ax.set_ylabel('Probability of Recruitment', fontsize=12)
-    ax.set_title('Anesthesiology Faculty Recruitment Model', fontsize=14, fontweight='bold')
+    title = 'Anesthesiology Faculty Recruitment Model'
+    if cost_of_living != 100:
+        title += f' (National Equivalent - Regional at {cost_of_living}%)'
+    ax.set_title(title, fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend(loc='lower right')
     ax.set_xlim(250, 700)
@@ -139,17 +158,21 @@ with col1:
 with col2:
     st.markdown("### Recruitment Analysis")
     
-    if salary_current:
+    if salary_current_adjusted:
         st.metric(
-            "Recommended Salary", 
-            f"${salary_current:.0f},000",
-            f"${(salary_current - salary_baseline):.0f}K vs baseline" if culture_score != 0 else None
+            "Recommended Salary (Regional)", 
+            f"${salary_current_adjusted:.0f},000",
+            f"${(salary_current_adjusted - salary_baseline_adjusted):.0f}K vs baseline" if culture_score != 0 else None
         )
+        
+        if cost_of_living != 100:
+            st.markdown(f"**National Equivalent:** ${salary_current:.0f}K")
+            st.markdown(f"**Regional Adjustment:** {cost_of_living}% of national")
         
         st.markdown(f"**Target Probability:** {target_probability:.0%}")
         
         if culture_score != 0:
-            savings = salary_baseline - salary_current
+            savings = salary_baseline_adjusted - salary_current_adjusted
             st.markdown(f"**Culture Impact:** ${abs(savings):.0f}K {'savings' if savings > 0 else 'additional cost'}")
     else:
         st.error("Target probability exceeds maximum achievable probability")
@@ -157,15 +180,18 @@ with col2:
     st.markdown("### Key Insights")
     
     inflection_salary = c - culture_score
-    st.markdown(f"• **50% probability at:** ${inflection_salary:.0f}K")
+    inflection_salary_adjusted = inflection_salary * col_adjustment
+    st.markdown(f"• **50% probability at:** ${inflection_salary_adjusted:.0f}K")
     
     eighty_percent_salary = find_salary_for_probability(0.8, a, b, c, k=culture_score)
     if eighty_percent_salary:
-        st.markdown(f"• **80% probability at:** ${eighty_percent_salary:.0f}K")
+        eighty_adjusted = eighty_percent_salary * col_adjustment
+        st.markdown(f"• **80% probability at:** ${eighty_adjusted:.0f}K")
     
     ninety_percent_salary = find_salary_for_probability(0.9, a, b, c, k=culture_score)
     if ninety_percent_salary:
-        st.markdown(f"• **90% probability at:** ${ninety_percent_salary:.0f}K")
+        ninety_adjusted = ninety_percent_salary * col_adjustment
+        st.markdown(f"• **90% probability at:** ${ninety_adjusted:.0f}K")
 
 st.markdown("---")
 
@@ -206,6 +232,7 @@ with col4:
     - Reflects current competitive market conditions
     - Culture factors are additive and linear
     - Individual preferences may vary
+    - Cost of living ranges from 77% (Decatur, IL) to 231% (Manhattan, NY)
     """)
 
 st.markdown("---")
