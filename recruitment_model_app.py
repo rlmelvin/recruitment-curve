@@ -103,10 +103,10 @@ b = st.sidebar.slider(
 
 c = st.sidebar.slider(
     "Baseline Inflection Point (c)",
-    min_value=300,
-    max_value=500,
+    min_value=300.0,
+    max_value=500.0,
     value=curve_params["c"],
-    step=5,
+    step=5.0,
     help="Compensation (in $1000s) at which recruitment probability is 50% of maximum"
 )
 
@@ -115,7 +115,7 @@ culture_score = st.sidebar.slider(
     "Department Culture Score",
     min_value=int(culture_bounds["min"]),
     max_value=int(culture_bounds["max"]),
-    value=int(culture_bounds["default"]),
+    value=culture_bounds["default"],
     step=5,
     help="Positive values make recruitment easier, negative values make it harder. Each point ≈ $1,000 in compensation value."
 )
