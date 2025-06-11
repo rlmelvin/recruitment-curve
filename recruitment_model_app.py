@@ -2,6 +2,8 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import json
+import os
 
 st.set_page_config(
     page_title="Anesthesiology Faculty Recruitment Model",
@@ -17,6 +19,38 @@ This tool models the probability of successful faculty recruitment based on comp
 using a pharmacological dose-response curve approach. The model incorporates departmental 
 culture as a key factor that can shift the recruitment curve.
 """)
+
+# Load parameters from JSON file
+@st.cache_data
+def load_parameters():
+    param_file = "parameters.json"
+    if os.path.exists(param_file):
+        with open(param_file, 'r') as f:
+            params = json.load(f)
+        return params
+    else:
+        # Default parameters if file doesn't exist
+        return {
+            "curve_parameters": {
+                "a": 0.92,
+                "b": 0.023,
+                "c": 383
+            },
+            "culture_bounds": {
+                "min": -50,
+                "max": 50,
+                "default": 0
+            },
+            "fitted": False
+        }
+
+params = load_parameters()
+
+# Display if parameters are fitted from data
+if params.get("fitted", False):
+    st.info(f"📊 Model parameters fitted from {params['fit_metadata']['n_samples']} data points (RMSE: {params['fit_metadata']['rmse']:.3f})")
+else:
+    st.info("📊 Using default model parameters")
 
 def sigmoid_recruitment(x, a, b, c, k=0):
     """
@@ -43,11 +77,16 @@ def find_salary_for_probability(target_prob, a, b, c, k=0):
 st.sidebar.header("Model Parameters")
 
 st.sidebar.markdown("### Curve Parameters")
+
+# Get parameter values from loaded data
+curve_params = params["curve_parameters"]
+culture_bounds = params["culture_bounds"]
+
 a = st.sidebar.slider(
     "Maximum Probability (a)",
     min_value=0.8,
     max_value=1.0,
-    value=0.92,
+    value=curve_params["a"],
     step=0.01,
     help="The maximum achievable recruitment probability"
 )
@@ -56,7 +95,7 @@ b = st.sidebar.slider(
     "Slope (b)",
     min_value=0.01,
     max_value=0.05,
-    value=0.023,
+    value=curve_params["b"],
     step=0.001,
     format="%.3f",
     help="How steeply the probability increases with compensation"
@@ -66,7 +105,7 @@ c = st.sidebar.slider(
     "Baseline Inflection Point (c)",
     min_value=300,
     max_value=500,
-    value=383,
+    value=curve_params["c"],
     step=5,
     help="Compensation (in $1000s) at which recruitment probability is 50% of maximum"
 )
@@ -74,9 +113,9 @@ c = st.sidebar.slider(
 st.sidebar.markdown("### Culture Factor")
 culture_score = st.sidebar.slider(
     "Department Culture Score",
-    min_value=-50,
-    max_value=50,
-    value=0,
+    min_value=int(culture_bounds["min"]),
+    max_value=int(culture_bounds["max"]),
+    value=int(culture_bounds["default"]),
     step=5,
     help="Positive values make recruitment easier, negative values make it harder. Each point ≈ $1,000 in compensation value."
 )
