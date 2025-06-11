@@ -47,10 +47,11 @@ def load_parameters():
 params = load_parameters()
 
 # Display if parameters are fitted from data
-if params.get("fitted", False):
-    st.info(f"📊 Model parameters fitted from {params['fit_metadata']['n_samples']} data points (RMSE: {params['fit_metadata']['rmse']:.3f})")
-else:
-    st.info("📊 Using default model parameters")
+# TODO restore when actually using historic data
+# if params.get("fitted", False):
+#     st.info(f"📊 Model parameters fitted from {params['fit_metadata']['n_samples']} data points (RMSE: {params['fit_metadata']['rmse']:.3f})")
+# else:
+#     st.info("📊 Using default model parameters")
 
 def sigmoid_recruitment(x, a, b, c, k=0):
     """
@@ -76,39 +77,9 @@ def find_salary_for_probability(target_prob, a, b, c, k=0):
 
 st.sidebar.header("Model Parameters")
 
-st.sidebar.markdown("### Curve Parameters")
-
 # Get parameter values from loaded data
 curve_params = params["curve_parameters"]
 culture_bounds = params["culture_bounds"]
-
-a = st.sidebar.slider(
-    "Maximum Probability (a)",
-    min_value=0.8,
-    max_value=1.0,
-    value=curve_params["a"],
-    step=0.01,
-    help="The maximum achievable recruitment probability"
-)
-
-b = st.sidebar.slider(
-    "Slope (b)",
-    min_value=0.01,
-    max_value=0.05,
-    value=curve_params["b"],
-    step=0.001,
-    format="%.3f",
-    help="How steeply the probability increases with compensation"
-)
-
-c = st.sidebar.slider(
-    "Baseline Inflection Point (c)",
-    min_value=300.0,
-    max_value=500.0,
-    value=curve_params["c"],
-    step=5.0,
-    help="Compensation (in $1000s) at which recruitment probability is 50% of maximum"
-)
 
 st.sidebar.markdown("### Culture Factor")
 culture_score = st.sidebar.slider(
@@ -139,6 +110,38 @@ target_probability = st.sidebar.slider(
     step=0.05,
     help="Desired probability of successful recruitment"
 )
+
+# Advanced curve parameters in collapsible section
+with st.sidebar.expander("🔧 Advanced Curve Parameters", expanded=False):
+    st.markdown("*Defaults fitted from historical data*")
+    
+    a = st.slider(
+        "Maximum Probability (a)",
+        min_value=0.8,
+        max_value=1.0,
+        value=curve_params["a"],
+        step=0.01,
+        help="The maximum achievable recruitment probability"
+    )
+    
+    b = st.slider(
+        "Slope (b)",
+        min_value=0.01,
+        max_value=0.05,
+        value=curve_params["b"],
+        step=0.001,
+        format="%.3f",
+        help="How steeply the probability increases with compensation"
+    )
+    
+    c = st.slider(
+        "Baseline Inflection Point (c)",
+        min_value=300.0,
+        max_value=500.0,
+        value=curve_params["c"],
+        step=5.0,
+        help="Compensation (in $1000s) at which recruitment probability is 50% of maximum"
+    )
 
 col1, col2 = st.columns([2, 1])
 
