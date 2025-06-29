@@ -2,7 +2,7 @@
   "curve_parameters": {
     "a": 0.92,
     "b": 0.023,
-    "c": 383,
+    "c": 383.0,
     "description": {
       "a": "Maximum recruitment probability (asymptote)",
       "b": "Slope (steepness of the curve)",
