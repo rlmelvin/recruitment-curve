@@ -1,8 +1,8 @@
 {
   "curve_parameters": {
-    "a": 0.8738181269069297,
-    "b": 0.029607074151805263,
-    "c": 350.0178085470845,
+    "a": 0.92,
+    "b": 0.023,
+    "c": 383,
     "description": {
       "a": "Maximum recruitment probability (asymptote)",
       "b": "Slope (steepness of the curve)",
@@ -10,33 +10,10 @@
     }
   },
   "culture_bounds": {
-    "min": -100.0,
-    "max": 100.0,
+    "min": -50,
+    "max": 50,
     "default": 0,
-    "description": "Culture factor range (each point \u2248 $1,000 in compensation value)"
+    "description": "Culture factor range (each point ≈ $1,000 in compensation value)"
   },
-  "fitted": true,
-  "fit_metadata": {
-    "date": "2025-06-10T19:35:28.425147",
-    "n_samples": 200,
-    "rmse": 0.40462763312548106,
-    "culture_std_estimate": 129.29978031770204,
-    "parameter_covariance": [
-      [
-        0.0028066221529268894,
-        -0.00021560596527882823,
-        0.3134817685484059
-      ],
-      [
-        -0.00021560596527882826,
-        6.0175431715354335e-05,
-        -0.027850432155016255
-      ],
-      [
-        0.3134817685484059,
-        -0.02785043215501625,
-        94.04201080349915
-      ]
-    ]
-  }
+  "fitted": false
 }
