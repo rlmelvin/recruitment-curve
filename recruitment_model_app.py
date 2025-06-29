@@ -46,6 +46,11 @@ def load_parameters():
 
 params = load_parameters()
 
+# Initialize session state for cost of living
+if 'cost_of_living' not in st.session_state:
+    st.session_state.cost_of_living = 100
+
+
 # Display if parameters are fitted from data
 # TODO restore when actually using historic data
 # if params.get("fitted", False):
@@ -92,13 +97,18 @@ culture_score = st.sidebar.slider(
 )
 
 st.sidebar.markdown("### Regional Adjustment")
+
+if st.sidebar.button("Snap to Birmingham, AL (91%)"):
+    st.session_state.cost_of_living = 91
+    st.rerun()
+
 cost_of_living = st.sidebar.slider(
     "Regional Cost of Living Index",
     min_value=77,
     max_value=231,
-    value=100,
     step=1,
-    help="Cost of living index relative to national average (100). Manhattan=231, Decatur IL=77"
+    help="Cost of living index relative to national average (100). Manhattan=231, Decatur IL=77",
+    key='cost_of_living'
 )
 
 st.sidebar.markdown("### Target Parameters")
