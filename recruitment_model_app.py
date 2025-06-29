@@ -148,22 +148,27 @@ col1, col2 = st.columns([2, 1])
 with col1:
     # Apply cost of living adjustment to the x-axis range
     col_adjustment = cost_of_living / 100.0
-    x = np.linspace(250, 700, 500)
+    x_min, x_max = 250, 700
     
-    y_baseline = sigmoid_recruitment(x, a, b, c, k=0)
-    y_current = sigmoid_recruitment(x, a, b, c, k=culture_score)
+    # Create national-scale salaries for the model and regional-scale for the plot
+    x_national = np.linspace(x_min, x_max, 500)
+    x_regional = x_national * col_adjustment
+    
+    y_baseline = sigmoid_recruitment(x_national, a, b, c, k=0)
+    y_current = sigmoid_recruitment(x_national, a, b, c, k=culture_score)
     
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    ax.plot(x, y_baseline, 'r--', label='Baseline (Culture = 0)', linewidth=2, alpha=0.7)
-    ax.plot(x, y_current, 'b-', label=f'Current (Culture = {culture_score})', linewidth=3)
+    # Plot against the regional x-axis
+    ax.plot(x_regional, y_baseline, 'r--', label='Baseline (Culture = 0)', linewidth=2, alpha=0.7)
+    ax.plot(x_regional, y_current, 'b-', label=f'Current (Culture = {culture_score})', linewidth=3)
     
     if culture_score > 0:
-        y_negative = sigmoid_recruitment(x, a, b, c, k=-20)
-        ax.plot(x, y_negative, 'g:', label='Poor Culture (-20)', linewidth=2, alpha=0.5)
+        y_negative = sigmoid_recruitment(x_national, a, b, c, k=-20)
+        ax.plot(x_regional, y_negative, 'g:', label='Poor Culture (-20)', linewidth=2, alpha=0.5)
     elif culture_score < 0:
-        y_positive = sigmoid_recruitment(x, a, b, c, k=30)
-        ax.plot(x, y_positive, 'g:', label='Strong Culture (+30)', linewidth=2, alpha=0.5)
+        y_positive = sigmoid_recruitment(x_national, a, b, c, k=30)
+        ax.plot(x_regional, y_positive, 'g:', label='Strong Culture (+30)', linewidth=2, alpha=0.5)
     
     salary_baseline = find_salary_for_probability(target_probability, a, b, c, k=0)
     salary_current = find_salary_for_probability(target_probability, a, b, c, k=culture_score)
@@ -172,27 +177,31 @@ with col1:
     salary_baseline_adjusted = salary_baseline * col_adjustment if salary_baseline else None
     salary_current_adjusted = salary_current * col_adjustment if salary_current else None
     
-    if salary_current:
-        ax.plot([salary_current, salary_current], [0, target_probability], 'b--', alpha=0.5)
-        ax.plot([250, salary_current], [target_probability, target_probability], 'b--', alpha=0.5)
-        ax.scatter([salary_current], [target_probability], color='blue', s=100, zorder=5)
+    # Plot target lines using regionally adjusted salaries
+    if salary_current_adjusted:
+        ax.plot([salary_current_adjusted, salary_current_adjusted], [0, target_probability], 'b--', alpha=0.5)
+        ax.plot([x_min * col_adjustment, salary_current_adjusted], [target_probability, target_probability], 'b--', alpha=0.5)
+        ax.scatter([salary_current_adjusted], [target_probability], color='blue', s=100, zorder=5)
     
-    ax.set_xlabel('Compensation ($1000s)', fontsize=12)
+    ax.set_xlabel('Regional Compensation ($1000s)', fontsize=12)
     ax.set_ylabel('Probability of Recruitment', fontsize=12)
     title = 'Anesthesiology Faculty Recruitment Model'
     if cost_of_living != 100:
-        title += f' (National Equivalent - Regional at {cost_of_living}%)'
+        title += f' (Regional View @ {cost_of_living}%)'
     ax.set_title(title, fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend(loc='lower right')
-    ax.set_xlim(250, 700)
+    ax.set_xlim(x_min * col_adjustment, x_max * col_adjustment)
     ax.set_ylim(0, 1)
     
+    # Adjust secondary axis to match regional scale
     ax2 = ax.twiny()
-    ax2.set_xlim(250, 700)
-    ax2.set_xticks([300, 400, 500, 600])
-    ax2.set_xticklabels(['$300K', '$400K', '$500K', '$600K'])
-    ax2.set_xlabel('Annual Compensation', fontsize=12)
+    ax2.set_xlim(ax.get_xlim())
+    base_ticks = np.array([300, 400, 500, 600])
+    regional_ticks = base_ticks * col_adjustment
+    ax2.set_xticks(regional_ticks)
+    ax2.set_xticklabels([f'${int(tick)}K' for tick in regional_ticks])
+    ax2.set_xlabel('Annual Compensation (Regional)', fontsize=12)
     
     plt.tight_layout()
     st.pyplot(fig)
@@ -242,12 +251,27 @@ st.markdown("### Understanding the Model")
 col3, col4 = st.columns(2)
 
 with col3:
-    st.markdown("""
-    #### Compensation Zones
-    - **Below $350K:** Very low recruitment probability
-    - **$350-450K:** Steep increase in recruitment success
-    - **$450-550K:** Diminishing returns begin
-    - **Above $550K:** Minimal additional benefit
+    # Create dynamic compensation zones based on regional adjustment
+    zones = {
+        "Below": 350,
+        "Steep increase": (350, 450),
+        "Diminishing returns": (450, 550),
+        "Above": 550
+    }
+    
+    adjusted_zones = {
+        "Below": int(zones["Below"] * col_adjustment),
+        "Steep increase": (int(zones["Steep increase"][0] * col_adjustment), int(zones["Steep increase"][1] * col_adjustment)),
+        "Diminishing returns": (int(zones["Diminishing returns"][0] * col_adjustment), int(zones["Diminishing returns"][1] * col_adjustment)),
+        "Above": int(zones["Above"] * col_adjustment)
+    }
+
+    st.markdown(f"""
+    #### Compensation Zones (Regional)
+    - **Below ${adjusted_zones['Below']}K:** Very low recruitment probability
+    - **${adjusted_zones['Steep increase'][0]}K-${adjusted_zones['Steep increase'][1]}K:** Steep increase in recruitment success
+    - **${adjusted_zones['Diminishing returns'][0]}K-${adjusted_zones['Diminishing returns'][1]}K:** Diminishing returns begin
+    - **Above ${adjusted_zones['Above']}K:** Minimal additional benefit
     """)
     
     st.markdown("""
